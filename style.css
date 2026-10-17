@@ -1,0 +1,123 @@
+:root{
+  --creme:#faf6f0;
+  --encre:#1f1b16;
+  --sapin:#1f3d36;
+  --terracotta:#b8502c;
+  --terracotta-fonce:#9a4122;
+  --filet:#e6ddd0;
+  --doux:#5c554c;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;
+  background:var(--creme);
+  color:var(--encre);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  font-size:1.125rem;
+  line-height:1.55;
+  padding-bottom:96px;
+}
+h1,h2,h3{
+  font-family:"Fraunces",Georgia,"Times New Roman",serif;
+  color:var(--sapin);
+  line-height:1.15;
+  margin:0 0 .5em;
+  font-weight:700;
+}
+h1{font-size:2.1rem}
+h2{font-size:1.6rem}
+h3{font-size:1.25rem}
+p{margin:0 0 1em}
+a{color:var(--terracotta-fonce)}
+.wrap{max-width:640px;margin:0 auto;padding:0 20px}
+
+.top{padding:18px 0 4px}
+.marque{
+  font-family:"Fraunces",Georgia,serif;
+  font-weight:700;
+  font-size:1.25rem;
+  color:var(--sapin);
+  text-decoration:none;
+}
+
+.hero{padding:28px 0 32px}
+.hero p.sous{font-size:1.2rem;color:var(--doux)}
+.note{font-size:.95rem;color:var(--doux)}
+
+.bouton{
+  display:block;
+  width:100%;
+  text-align:center;
+  background:var(--terracotta);
+  color:#fff;
+  text-decoration:none;
+  font-weight:700;
+  font-size:1.2rem;
+  padding:18px 20px;
+  border-radius:14px;
+  min-height:56px;
+}
+.bouton:active{background:var(--terracotta-fonce)}
+.bouton.secondaire{background:transparent;color:var(--sapin);border:2px solid var(--sapin)}
+
+.barre{
+  position:fixed;
+  left:0;right:0;bottom:0;
+  background:var(--creme);
+  border-top:1px solid var(--filet);
+  padding:12px 20px calc(12px + env(safe-area-inset-bottom));
+  z-index:10;
+}
+.barre .bouton{max-width:600px;margin:0 auto}
+
+section{padding:28px 0;border-top:1px solid var(--filet)}
+
+.etiquette{
+  position:relative;
+  background:#fff;
+  border:2px solid var(--sapin);
+  border-radius:6px 22px 22px 6px;
+  padding:20px 20px 20px 64px;
+  margin:0 0 18px;
+}
+.etiquette::before{
+  content:"";
+  position:absolute;
+  left:20px;top:50%;
+  width:18px;height:18px;
+  margin-top:-9px;
+  border-radius:50%;
+  background:var(--creme);
+  border:2px solid var(--sapin);
+}
+.etiquette .grand{
+  font-family:"Fraunces",Georgia,serif;
+  font-size:2.4rem;
+  font-weight:700;
+  color:var(--terracotta-fonce);
+  line-height:1;
+  display:block;
+  margin-bottom:6px;
+}
+.etiquette p{margin:0}
+
+.benefices{list-style:none;margin:0;padding:0}
+.benefices li{padding:0 0 22px}
+.benefices h3{margin-bottom:.2em}
+.benefices p{margin:0;color:var(--doux)}
+
+.liste-legale h2{margin-top:1.6em;font-size:1.3rem}
+.todo{background:#ffe27a;padding:0 4px;border-radius:3px;font-weight:600}
+
+footer{padding:24px 0 8px;border-top:1px solid var(--filet);font-size:.95rem;color:var(--doux)}
+footer a{margin-right:14px;white-space:nowrap}
+
+@media (min-width:720px){
+  body{font-size:1.2rem}
+  h1{font-size:2.8rem}
+  .wrap{max-width:720px}
+  .barre{display:none}
+  body{padding-bottom:24px}
+  .bouton{display:inline-block;width:auto;padding:18px 40px}
+}
