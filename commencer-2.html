@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Seconde Main : ton résultat en 3 questions</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700&display=swap">
+<link rel="stylesheet" href="/style.css">
+<style>
+body{padding-bottom:24px}
+.progres{height:8px;background:var(--filet);border-radius:99px;overflow:hidden;margin:8px 0 6px}
+.progres > div{height:100%;width:0;background:var(--terracotta);transition:width .3s}
+.etape{font-size:.95rem;color:var(--doux);margin:0 0 22px}
+.choix{display:block;width:100%;text-align:left;background:#fff;border:2px solid var(--sapin);color:var(--encre);font:inherit;font-weight:600;padding:18px 18px;border-radius:14px;margin:0 0 12px;min-height:56px;cursor:pointer}
+.choix:active,.choix:focus-visible{background:var(--sapin);color:#fff;outline:none}
+.retour{background:none;border:0;color:var(--doux);font:inherit;font-size:1rem;text-decoration:underline;padding:12px 0;cursor:pointer}
+.cache{display:none}
+.calcul{font-size:.95rem;color:var(--doux);border-top:1px solid var(--filet);margin-top:24px;padding-top:16px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top"><a class="marque" href="/">Seconde Main</a></header>
+
+  <main id="app" aria-live="polite">
+
+    <section id="q" style="border:0;padding-top:12px">
+      <div class="progres" role="progressbar" aria-valuemin="0" aria-valuemax="3" aria-valuenow="1" id="barre"><div id="remplie"></div></div>
+      <p class="etape" id="etape">Question 1 sur 3</p>
+      <h1 id="titre" style="font-size:1.7rem"></h1>
+      <div id="choix"></div>
+      <button class="retour cache" id="retour" type="button">Revenir à la question précédente</button>
+    </section>
+
+    <section id="r" class="cache" style="border:0;padding-top:12px">
+      <div class="progres"><div style="width:100%"></div></div>
+      <p class="etape">Ton résultat</p>
+      <h1 id="rtitre" style="font-size:1.7rem"></h1>
+
+      <div class="etiquette">
+        <span class="grand" id="argent"></span>
+        <p>c'est ce que valent, à peu près, les objets que tu pourrais vendre.</p>
+      </div>
+      <div class="etiquette">
+        <span class="grand" id="tempsAvant"></span>
+        <p id="phraseAvant"></p>
+      </div>
+      <div class="etiquette">
+        <span class="grand" id="tempsApres"></span>
+        <p>avec Seconde Main : le texte et le prix conseillé sont préparés, tu relis et tu déposes.</p>
+      </div>
+
+      <p><strong>Tu gagnerais environ <span id="gain"></span> de ton temps.</strong></p>
+
+      <p class="calcul" id="calcul"></p>
+
+      <div style="margin-top:24px">
+        <p><strong>La suite :</strong> tu déposeras une vraie photo et tu verras apparaître le titre et la description. Cette étape arrive très bientôt.</p>
+        <a class="bouton" href="/">Retour à l'accueil</a>
+        <button class="retour" id="refaire" type="button">Refaire le test</button>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+(function(){
+  var questions = [
+    { titre: "Combien d'objets aimerais-tu vendre en ce moment ?",
+      options: [
+        { t: "1 à 5 objets", v: 3 },
+        { t: "6 à 20 objets", v: 13 },
+        { t: "Plus de 20 objets", v: 30 }
+      ] },
+    { titre: "Sur combien de sites vends-tu, ou voudrais-tu vendre ?",
+      options: [
+        { t: "Un seul site", v: 1 },
+        { t: "Deux sites", v: 2 },
+        { t: "Trois sites ou plus", v: 3 }
+      ] },
+    { titre: "À peu près, combien vaut un objet que tu vendrais ?",
+      options: [
+        { t: "Moins de 10 €", v: 5 },
+        { t: "Entre 10 et 30 €", v: 20 },
+        { t: "Entre 30 et 100 €", v: 60 },
+        { t: "Plus de 100 €", v: 150 }
+      ] }
+  ];
+  var reponses = [];
+  var etape = 0;
+
+  var elQ = document.getElementById('q');
+  var elR = document.getElementById('r');
+  var elTitre = document.getElementById('titre');
+  var elChoix = document.getElementById('choix');
+  var elEtape = document.getElementById('etape');
+  var elRemplie = document.getElementById('remplie');
+  var elBarre = document.getElementById('barre');
+  var elRetour = document.getElementById('retour');
+
+  function afficher(){
+    var q = questions[etape];
+    elTitre.textContent = q.titre;
+    elEtape.textContent = "Question " + (etape + 1) + " sur 3";
+    elRemplie.style.width = (etape / 3 * 100 + 8) + "%";
+    elBarre.setAttribute('aria-valuenow', etape + 1);
+    elChoix.innerHTML = "";
+    q.options.forEach(function(o, i){
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'choix';
+      b.textContent = o.t;
+      b.addEventListener('click', function(){ choisir(i); });
+      elChoix.appendChild(b);
+    });
+    elRetour.classList.toggle('cache', etape === 0);
+    window.scrollTo(0, 0);
+  }
+
+  function choisir(i){
+    reponses[etape] = questions[etape].options[i].v;
+    if (etape < 2) { etape++; afficher(); }
+    else { resultat(); }
+  }
+
+  function dureeTxt(min){
+    var h = Math.round(min / 6) / 10;
+    if (min < 90) return Math.round(min) + " min";
+    return String(h).replace('.', ',') + " h";
+  }
+  function euros(n){
+    return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ") + " €";
+  }
+
+  function resultat(){
+    var objets = reponses[0], sites = reponses[1], valeur = reponses[2];
+    var argent = objets * valeur;
+    var avant = objets * sites * 10;
+    var apres = objets * (5 + sites * 2);
+    var gainMin = Math.max(avant - apres, 0);
+    var gainPct = avant > 0 ? Math.round(gainMin / avant * 100) : 0;
+
+    document.getElementById('rtitre').textContent = "Voilà ce que ça te coûte aujourd'hui";
+    document.getElementById('argent').textContent = "≈ " + euros(argent);
+    document.getElementById('tempsAvant').textContent = "≈ " + dureeTxt(avant);
+    document.getElementById('phraseAvant').textContent =
+      "pour rédiger tes annonces à la main : " + objets + " objets sur " + sites + (sites > 1 ? " sites" : " site") + ".";
+    document.getElementById('tempsApres').textContent = "≈ " + dureeTxt(apres);
+    document.getElementById('gain').textContent = gainPct + " % (environ " + dureeTxt(gainMin) + ")";
+    document.getElementById('calcul').textContent =
+      "Comment on a calculé : ce sont des estimations à partir de tes réponses. Aujourd'hui, nous comptons environ 10 minutes par objet et par site. Avec Seconde Main, environ 5 minutes par objet plus 2 minutes par site pour relire et déposer. La valeur utilise le milieu de la tranche que tu as choisie. Ton résultat réel peut être différent.";
+
+    elQ.classList.add('cache');
+    elR.classList.remove('cache');
+    window.scrollTo(0, 0);
+  }
+
+  elRetour.addEventListener('click', function(){ if (etape > 0) { etape--; afficher(); } });
+  document.getElementById('refaire').addEventListener('click', function(){
+    reponses = []; etape = 0;
+    elR.classList.add('cache'); elQ.classList.remove('cache');
+    afficher();
+  });
+
+  afficher();
+})();
+</script>
+</body>
+</html>
