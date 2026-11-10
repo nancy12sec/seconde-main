@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ton avant-goût : Seconde Main</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700&display=swap">
+<link rel="stylesheet" href="/style.css">
+<style>
+body{padding-bottom:24px}
+.cache{display:none}
+.depot{display:block;width:100%;text-align:center;border:2px dashed var(--sapin);border-radius:14px;padding:28px 16px;background:#fff;font-weight:700;color:var(--sapin);cursor:pointer}
+.depot input{position:absolute;left:-9999px}
+.depot:focus-within{outline:3px solid var(--terracotta);outline-offset:2px}
+.apercu{display:block;max-width:100%;max-height:260px;margin:16px auto 0;border-radius:10px}
+.champ{background:#fff;border:2px solid var(--sapin);border-radius:12px;padding:16px;margin:0 0 14px;white-space:pre-wrap}
+.champ small{display:block;color:var(--doux);font-weight:600;margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em;font-size:.8rem}
+.petit{background:none;border:2px solid var(--sapin);color:var(--sapin);font:inherit;font-weight:700;padding:12px 16px;border-radius:12px;min-height:48px;cursor:pointer;margin:0 8px 8px 0}
+.verrou{position:relative;border:2px dashed var(--filet);border-radius:12px;padding:16px;margin:0 0 12px;color:var(--doux)}
+.verrou strong{color:var(--sapin)}
+.verrou span.etiq{display:inline-block;margin-top:6px;font-size:.85rem;font-weight:700;background:var(--filet);color:var(--sapin);padding:2px 8px;border-radius:99px}
+.alerte{background:#fff3ee;border:2px solid var(--terracotta);border-radius:12px;padding:14px 16px;margin:14px 0}
+ul.verif{margin:0 0 18px;padding-left:1.2em}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top"><a class="marque" href="/">Seconde Main</a></header>
+
+  <main aria-live="polite">
+    <section id="depot" style="border:0">
+      <h1 style="font-size:1.7rem">Dépose la photo d'un objet</h1>
+      <p class="note">Prends en photo un objet que tu veux vendre. Une seule photo suffit pour cet essai gratuit.</p>
+      <label class="depot" for="photo">
+        <span id="texteDepot">Choisir ou prendre une photo</span>
+        <input id="photo" type="file" accept="image/*">
+      </label>
+      <img id="apercu" class="apercu cache" alt="Aperçu de ta photo">
+      <div id="erreur" class="alerte cache" role="alert"></div>
+      <p class="note" style="margin-top:14px">Ta photo est envoyée à un service d'IA pour rédiger le texte. Elle n'est pas conservée par Seconde Main. <a href="/confidentialite.html">En savoir plus</a>.</p>
+    </section>
+
+    <section id="attente" class="cache" style="border:0">
+      <h1 style="font-size:1.7rem">On rédige ton annonce…</h1>
+      <p class="note">Ça prend quelques secondes.</p>
+    </section>
+
+    <section id="resultat" class="cache" style="border:0">
+      <h1 style="font-size:1.7rem">Voilà ton annonce</h1>
+      <div class="champ" id="rTitre"><small>Titre</small><span></span></div>
+      <div class="champ" id="rDesc"><small>Description</small><span></span></div>
+      <button class="petit" id="copierTitre" type="button">Copier le titre</button>
+      <button class="petit" id="copierDesc" type="button">Copier la description</button>
+
+      <div class="alerte" id="blocVerif">
+        <strong>À vérifier avant de publier :</strong>
+        <ul class="verif" id="listeVerif" style="margin-top:8px"></ul>
+      </div>
+      <p class="note">Ce texte est une aide générée automatiquement. Relis-le : tu restes responsable de ce que tu publies.</p>
+
+      <h2 style="margin-top:28px">La suite, pour aller plus loin</h2>
+      <div class="verrou"><strong>Prix conseillé</strong><br>Une fourchette estimée pour ton objet.<br><span class="etiq">Verrouillé · bientôt disponible</span></div>
+      <div class="verrou"><strong>Version prête pour chaque site</strong><br>Le texte au bon format pour Vinted et Leboncoin, avec la photo recadrée.<br><span class="etiq">Verrouillé · bientôt disponible</span></div>
+
+      <button class="petit" id="autre" type="button" style="margin-top:12px">Essayer avec une autre photo</button>
+      <a class="bouton secondaire" href="/" style="margin-top:12px">Retour à l'accueil</a>
+    </section>
+  </main>
+</div>
+
+<script>
+(function(){
+  var input = document.getElementById('photo');
+  var apercu = document.getElementById('apercu');
+  var erreur = document.getElementById('erreur');
+  var sDepot = document.getElementById('depot');
+  var sAttente = document.getElementById('attente');
+  var sResultat = document.getElementById('resultat');
+  var dernierTitre = "", derniereDesc = "";
+
+  function montrer(el){ [sDepot, sAttente, sResultat].forEach(function(s){ s.classList.add('cache'); }); el.classList.remove('cache'); window.scrollTo(0,0); }
+  function afficherErreur(msg){ erreur.textContent = msg; erreur.classList.remove('cache'); montrer(sDepot); }
+
+  function reduire(fichier){
+    return new Promise(function(ok, ko){
+      var url = URL.createObjectURL(fichier);
+      var img = new Image();
+      img.onload = function(){
+        var max = 1024, w = img.naturalWidth, h = img.naturalHeight;
+        var ratio = Math.min(1, max / Math.max(w, h));
+        var c = document.createElement('canvas');
+        c.width = Math.round(w * ratio); c.height = Math.round(h * ratio);
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(url);
+        var data = c.toDataURL('image/jpeg', 0.82);
+        ok({ base64: data.split(',')[1], apercu: data });
+      };
+      img.onerror = function(){ URL.revokeObjectURL(url); ko(new Error('lecture')); };
+      img.src = url;
+    });
+  }
+
+  input.addEventListener('change', function(){
+    var f = input.files && input.files[0];
+    erreur.classList.add('cache');
+    if (!f) return;
+    if (!/^image\//.test(f.type)) { afficherErreur("Ce fichier n'est pas une image. Choisis une photo."); return; }
+    reduire(f).then(function(r){
+      apercu.src = r.apercu; apercu.classList.remove('cache');
+      montrer(sAttente);
+      return fetch('/api/annonce', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: r.base64 })
+      });
+    }).then(function(rep){
+      if (!rep) return;
+      return rep.json().catch(function(){ return { erreur: "Réponse inattendue." }; }).then(function(d){
+        if (!rep.ok || d.erreur) { afficherErreur(d.erreur || "Une erreur est survenue. Réessaie."); return; }
+        dernierTitre = d.titre || ""; derniereDesc = d.description || "";
+        document.querySelector('#rTitre span').textContent = dernierTitre;
+        document.querySelector('#rDesc span').textContent = derniereDesc;
+        var ul = document.getElementById('listeVerif'); ul.innerHTML = '';
+        (d.a_verifier || []).forEach(function(t){ var li = document.createElement('li'); li.textContent = t; ul.appendChild(li); });
+        document.getElementById('blocVerif').classList.toggle('cache', !(d.a_verifier && d.a_verifier.length));
+        montrer(sResultat);
+      });
+    }).catch(function(){
+      afficherErreur("Impossible d'envoyer la photo. Vérifie ta connexion et réessaie.");
+    });
+  });
+
+  function copier(texte, bouton){
+    var libelle = bouton.textContent;
+    function fait(){ bouton.textContent = "Copié"; setTimeout(function(){ bouton.textContent = libelle; }, 1500); }
+    if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(texte).then(fait, function(){}); }
+  }
+  document.getElementById('copierTitre').addEventListener('click', function(){ copier(dernierTitre, this); });
+  document.getElementById('copierDesc').addEventListener('click', function(){ copier(derniereDesc, this); });
+  document.getElementById('autre').addEventListener('click', function(){
+    input.value = ''; apercu.classList.add('cache'); erreur.classList.add('cache'); montrer(sDepot);
+  });
+})();
+</script>
+</body>
+</html>
