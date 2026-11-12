@@ -79,7 +79,7 @@ module.exports = async function handler(req, res) {
       },
       body: JSON.stringify({
         model: MODELE,
-        max_tokens: 700,
+        max_tokens: 1000,
         system: CONSIGNE,
         messages: [
           {
@@ -103,6 +103,7 @@ module.exports = async function handler(req, res) {
     const texte = (donnees.content || []).filter((b) => b.type === "text").map((b) => b.text).join("");
     const json = extraireJson(texte);
     if (!json) {
+      console.error("Réponse illisible : arrêt =", donnees.stop_reason, "| longueur =", texte.length);
       return res.status(502).json({ erreur: "La réponse n'a pas pu être lue. Réessaie avec une autre photo." });
     }
     if (json.erreur) {
@@ -130,5 +131,7 @@ function extraireJson(texte) {
   const debut = texte.indexOf("{");
   const fin = texte.lastIndexOf("}");
   if (debut === -1 || fin <= debut) return null;
-  return safeParse(texte.slice(debut, fin + 1));
+  // Les sauts de ligne bruts dans une chaîne rendent le JSON invalide : on les remplace par des espaces.
+  const nettoye = texte.slice(debut, fin + 1).replace(/[\u0000-\u001F]+/g, " ");
+  return safeParse(nettoye);
 }
