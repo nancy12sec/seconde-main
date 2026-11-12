@@ -1,12 +1,16 @@
 // Fonction serveur : reçoit une photo, renvoie un titre et une description.
 // La clé secrète vient de la variable d'environnement ANTHROPIC_API_KEY (réglée dans Vercel).
 // Elle n'apparaît jamais dans le navigateur ni dans le code.
+// Essai gratuit : une annonce par appareil. Ensuite, accès payant vérifié auprès de Stripe.
+
+const acces = require("./_acces");
 
 const MODELE = process.env.ANTHROPIC_MODEL || "claude-haiku-5-5";
 const TAILLE_MAX = 1_500_000; // caractères base64 (~1,1 Mo d'image)
 const FENETRE_MS = 60 * 60 * 1000;
 const MAX_PAR_HEURE = 3;
 const MAX_PAR_JOUR_GLOBAL = 150;
+const TRENTE_JOURS = 30 * 24 * 60 * 60;
 
 // Limites en mémoire : elles aident, mais ne sont pas partagées entre toutes les instances.
 // La vraie protection du budget est le plafond de dépense réglé sur le compte de l'IA.
@@ -14,7 +18,7 @@ const parIp = new Map();
 let jour = new Date().toISOString().slice(0, 10);
 let totalJour = 0;
 
-function limiteAtteinte(ip) {
+function limiteGratuiteAtteinte(ip) {
   const aujourdhui = new Date().toISOString().slice(0, 10);
   if (aujourdhui !== jour) { jour = aujourdhui; totalJour = 0; parIp.clear(); }
   if (totalJour >= MAX_PAR_JOUR_GLOBAL) return true;
@@ -52,10 +56,34 @@ module.exports = async function handler(req, res) {
     return res.status(503).json({ erreur: "Le service n'est pas encore branché. Réessaie plus tard." });
   }
 
-  const ipBrute = (req.headers["x-forwarded-for"] || "").split(",")[0].trim();
-  const ip = ipBrute || (req.socket && req.socket.remoteAddress) || "inconnue";
-  if (limiteAtteinte(ip)) {
-    return res.status(429).json({ erreur: "Tu as atteint la limite d'essais gratuits pour le moment. Reviens un peu plus tard." });
+  const cookies = acces.lireCookies(req);
+  const jeton = acces.verifier(cookies.sm_acces);
+
+  // 1. Y a-t-il un accès payant valide ? (revérifié auprès de Stripe)
+  let droit = null;
+  if (jeton) {
+    try {
+      droit = await acces.verifierDroit(jeton);
+    } catch (e) {
+      console.error("Vérification d'accès impossible :", e.message);
+      return res.status(502).json({ erreur: "Impossible de vérifier ton accès pour le moment. Réessaie dans un instant." });
+    }
+  }
+
+  // 2. Sinon : essai gratuit, une seule fois par appareil.
+  if (droit) {
+    if (acces.limitePayantAtteinte(droit.cle)) {
+      return res.status(429).json({ erreur: "Tu as fait beaucoup d'annonces en peu de temps. Reprends dans un moment." });
+    }
+  } else {
+    if (cookies.sm_gratuit === "1") {
+      return res.status(402).json({ erreur: "Tu as utilisé ton essai gratuit. Choisis une formule pour continuer.", paywall: true });
+    }
+    const ipBrute = (req.headers["x-forwarded-for"] || "").split(",")[0].trim();
+    const ip = ipBrute || (req.socket && req.socket.remoteAddress) || "inconnue";
+    if (limiteGratuiteAtteinte(ip)) {
+      return res.status(429).json({ erreur: "Tu as atteint la limite d'essais gratuits pour le moment. Reviens un peu plus tard." });
+    }
   }
 
   const corps = typeof req.body === "string" ? safeParse(req.body) : req.body;
@@ -110,10 +138,22 @@ module.exports = async function handler(req, res) {
       return res.status(422).json({ erreur: String(json.erreur).slice(0, 200) });
     }
 
+    // Annonce réussie : on consomme l'essai gratuit ou l'annonce payée à l'unité.
+    if (droit && droit.type === "annonce") {
+      try {
+        await acces.marquerUtilisee(droit.pi);
+      } catch (e) {
+        console.error("Annonce payée non marquée comme utilisée :", e.message);
+      }
+    } else if (!droit) {
+      acces.poserCookie(res, "sm_gratuit", "1", TRENTE_JOURS);
+    }
+
     return res.status(200).json({
       titre: String(json.titre || "").slice(0, 120),
       description: String(json.description || "").slice(0, 1500),
       a_verifier: Array.isArray(json.a_verifier) ? json.a_verifier.slice(0, 5).map((x) => String(x).slice(0, 120)) : [],
+      formule: droit ? droit.type : "gratuit",
     });
   } catch (e) {
     console.error("Échec de l'appel :", e && e.name);
