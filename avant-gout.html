@@ -33,7 +33,7 @@ ul.verif{margin:0 0 18px;padding-left:1.2em}
   <main aria-live="polite">
     <section id="depot" style="border:0">
       <h1 style="font-size:1.7rem">Dépose la photo d'un objet</h1>
-      <p class="note">Prends en photo un objet que tu veux vendre. Une seule photo suffit pour cet essai gratuit.</p>
+      <p class="note">Prends en photo un objet que tu veux vendre. Une photo suffit : ta première annonce est gratuite.</p>
       <label class="depot" for="photo">
         <span id="texteDepot">Choisir ou prendre une photo</span>
         <input id="photo" type="file" accept="image/*">
@@ -62,8 +62,11 @@ ul.verif{margin:0 0 18px;padding-left:1.2em}
       <p class="note">Ce texte est une aide générée automatiquement. Relis-le : tu restes responsable de ce que tu publies.</p>
 
       <h2 style="margin-top:28px">La suite, pour aller plus loin</h2>
-      <div class="verrou"><strong>Prix conseillé</strong><br>Une fourchette estimée pour ton objet.<br><span class="etiq">Verrouillé · bientôt disponible</span></div>
-      <div class="verrou"><strong>Version prête pour chaque site</strong><br>Le texte au bon format pour Vinted et Leboncoin, avec la photo recadrée.<br><span class="etiq">Verrouillé · bientôt disponible</span></div>
+      <div class="verrou"><strong>Prix conseillé</strong><br>Une fourchette estimée pour ton objet.<br><span class="etiq">En préparation</span></div>
+      <div class="verrou"><strong>Version prête pour chaque site</strong><br>Le texte au bon format pour Vinted et Leboncoin, avec la photo recadrée.<br><span class="etiq">En préparation</span></div>
+      <div id="blocPayer" class="alerte cache"><strong>Tu as utilisé ton essai gratuit.</strong><br>Pour rédiger d'autres annonces : 12 € par mois, ou 1 € par annonce.<br><a class="bouton" href="/tarifs.html" style="margin-top:10px">Voir les formules</a></div>
+      <p id="statut" class="note cache"></p>
+      <button class="petit cache" id="portail" type="button">Gérer mon abonnement</button>
 
       <button class="petit" id="autre" type="button" style="margin-top:12px">Essayer avec une autre photo</button>
       <a class="bouton secondaire" href="/" style="margin-top:12px">Retour à l'accueil</a>
@@ -119,7 +122,10 @@ ul.verif{margin:0 0 18px;padding-left:1.2em}
     }).then(function(rep){
       if (!rep) return;
       return rep.json().catch(function(){ return { erreur: "Réponse inattendue." }; }).then(function(d){
+        if (rep.status === 402 || d.paywall) { erreur.innerHTML = ''; erreur.appendChild(document.createTextNode((d.erreur || 'Essai gratuit utilisé.') + ' ')); var l = document.createElement('a'); l.href = '/tarifs.html'; l.textContent = 'Voir les formules'; erreur.appendChild(l); erreur.classList.remove('cache'); montrer(sDepot); return; }
         if (!rep.ok || d.erreur) { afficherErreur(d.erreur || "Une erreur est survenue. Réessaie."); return; }
+        try { sessionStorage.setItem('sm_annonce', JSON.stringify({ titre: d.titre })); } catch (e) {}
+        document.getElementById('blocPayer').classList.toggle('cache', d.formule !== 'gratuit');
         dernierTitre = d.titre || ""; derniereDesc = d.description || "";
         document.querySelector('#rTitre span').textContent = dernierTitre;
         document.querySelector('#rDesc span').textContent = derniereDesc;
@@ -131,6 +137,14 @@ ul.verif{margin:0 0 18px;padding-left:1.2em}
     }).catch(function(){
       afficherErreur("Impossible d'envoyer la photo. Vérifie ta connexion et réessaie.");
     });
+  });
+
+  fetch('/api/paiement', { credentials: 'same-origin' }).then(function(r){ return r.ok ? r.json() : null; }).then(function(d){
+    if (d && d.formule === 'mensuel') { document.getElementById('statut').textContent = 'Abonnement mensuel actif.'; document.getElementById('statut').classList.remove('cache'); document.getElementById('portail').classList.remove('cache'); }
+    else if (d && d.formule === 'annonce') { document.getElementById('statut').textContent = 'Annonce à l\'unité payée.'; document.getElementById('statut').classList.remove('cache'); }
+  }).catch(function(){});
+  document.getElementById('portail').addEventListener('click', function(){
+    fetch('/api/paiement', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'portail' }) }).then(function(r){ return r.json(); }).then(function(d){ if (d.url) location.href = d.url; });
   });
 
   function copier(texte, bouton){

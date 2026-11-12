@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Merci : Seconde Main</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700&display=swap">
+<link rel="stylesheet" href="/style.css">
+<style>.cache{display:none}button.bouton{border:0;font:inherit;width:100%;cursor:pointer}</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top"><a class="marque" href="/">Seconde Main</a></header>
+  <main aria-live="polite">
+    <section id="attente" style="border:0;padding-top:12px"><h1 style="font-size:1.7rem">Vérification de ton paiement…</h1></section>
+
+    <section id="ok" class="cache" style="border:0;padding-top:12px">
+      <h1 style="font-size:1.7rem">Merci, c'est confirmé</h1>
+      <p id="detail"></p>
+      <a class="bouton" href="/avant-gout.html">Rédiger mon annonce</a>
+      <p class="note" style="margin-top:14px">Ton accès est enregistré sur cet appareil et ce navigateur. Si tu changes d'appareil ou si tu effaces les données du navigateur, écris-nous et on te le rétablit. Garantie : remboursement sur simple demande par email pendant 14 jours.</p>
+      <button class="bouton secondaire cache" id="portail" type="button" style="margin-top:12px;background:transparent;color:var(--sapin);border:2px solid var(--sapin)">Gérer mon abonnement</button>
+    </section>
+
+    <section id="ko" class="cache" style="border:0;padding-top:12px">
+      <h1 style="font-size:1.7rem">Paiement non confirmé</h1>
+      <p>On n'a pas pu confirmer ton paiement. Si tu as été débité, écris-nous et on règle ça. Sinon, tu peux réessayer.</p>
+      <a class="bouton" href="/tarifs.html">Retour aux formules</a>
+    </section>
+  </main>
+</div>
+<script>
+(function(){
+  var $ = function(id){ return document.getElementById(id); };
+  var id = new URLSearchParams(location.search).get('session_id');
+  function fin(ok){ $('attente').classList.add('cache'); $(ok ? 'ok' : 'ko').classList.remove('cache'); }
+  if (!id) return fin(false);
+  fetch('/api/paiement?session_id=' + encodeURIComponent(id), { credentials: 'same-origin' })
+    .then(function(r){ return r.json().then(function(d){ if (!r.ok) throw 0; return d; }); })
+    .then(function(d){
+      $('detail').textContent = d.formule === 'mensuel'
+        ? "Ton abonnement mensuel est actif. Tu peux l'arrêter à tout moment."
+        : "Ton annonce est payée. Dépose une photo pour la rédiger.";
+      if (d.formule === 'mensuel') $('portail').classList.remove('cache');
+      fin(true);
+    })
+    .catch(function(){ fin(false); });
+  $('portail').addEventListener('click', function(){
+    fetch('/api/paiement', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ action:'portail' }) })
+      .then(function(r){ return r.json(); }).then(function(d){ if (d.url) location.href = d.url; });
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Les formules : Seconde Main</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700&display=swap">
+<link rel="stylesheet" href="/style.css">
+<style>
+body{padding-bottom:24px}
+.cache{display:none}
+.carte{background:#fff;border:2px solid var(--filet);border-radius:14px;padding:18px;margin:0 0 14px;cursor:pointer;display:block}
+.carte.choisie{border-color:var(--sapin);box-shadow:0 0 0 2px var(--sapin)}
+.carte .prix{font-family:Fraunces,Georgia,serif;font-size:1.9rem;font-weight:700;color:var(--sapin)}
+.carte .prix small{font-family:inherit;font-size:1rem;font-weight:600;color:var(--doux)}
+.carte .etq{display:inline-block;font-size:.8rem;font-weight:700;background:var(--terracotta);color:#fff;padding:2px 10px;border-radius:99px;margin-left:8px;vertical-align:middle}
+.carte input{position:absolute;left:-9999px}
+.carte:focus-within{outline:3px solid var(--terracotta);outline-offset:2px}
+.carte ul{margin:8px 0 0;padding-left:1.2em;color:var(--doux)}
+.rappel{background:#fff;border-left:4px solid var(--terracotta);padding:12px 16px;border-radius:8px;margin:0 0 18px}
+.alerte{background:#fff3ee;border:2px solid var(--terracotta);border-radius:12px;padding:14px 16px;margin:14px 0}
+.test{background:#fff8d6;border:2px solid #e0c200;border-radius:12px;padding:12px 16px;margin:14px 0;font-size:.95rem}
+details{border-bottom:1px solid var(--filet);padding:12px 0}
+summary{font-weight:700;cursor:pointer;min-height:32px}
+details p{margin:8px 0 0;color:var(--doux)}
+.cgv{display:flex;gap:10px;align-items:flex-start;margin:14px 0;font-size:.95rem}
+.cgv input{width:22px;height:22px;margin-top:2px;flex:none}
+button.bouton{border:0;font:inherit;width:100%;cursor:pointer}
+button.bouton:disabled{opacity:.5;cursor:not-allowed}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top"><a class="marque" href="/">Seconde Main</a></header>
+  <main>
+    <section id="choix" style="border:0;padding-top:12px">
+      <h1 style="font-size:1.7rem">Continue avec Seconde Main</h1>
+      <div id="rappel" class="rappel cache"></div>
+      <p id="gain" class="cache"></p>
+
+      <h2 style="font-size:1.2rem">Choisis ta formule</h2>
+      <label class="carte choisie" id="cMensuel">
+        <input type="radio" name="f" value="mensuel" checked>
+        <span class="prix">12 €<small> / mois</small></span><span class="etq">Le plus choisi</span>
+        <div class="note">soit environ 0,40 € par jour</div>
+        <ul><li>Annonces à volonté (usage raisonnable)</li><li>Sans engagement, tu arrêtes quand tu veux en ligne</li></ul>
+      </label>
+      <label class="carte" id="cAnnonce">
+        <input type="radio" name="f" value="annonce">
+        <span class="prix">1 €<small> / annonce</small></span>
+        <div class="note">Tu paies une fois, pour une annonce.</div>
+        <ul><li>Pas d'abonnement, rien à résilier</li></ul>
+      </label>
+
+      <p class="note"><strong>Ce que tu obtiens aujourd'hui :</strong> un titre et une description rédigés à partir de ta photo. Le prix conseillé et la version par site sont <strong>en préparation</strong> : ils ne sont pas encore disponibles et nous ne promettons pas de date.</p>
+      <p class="note"><strong>Garantie 14 jours :</strong> si ça ne te convient pas, écris-nous dans les 14 jours suivant ton paiement et on te rembourse, sans justification.</p>
+
+      <label class="cgv"><input type="checkbox" id="ok"><span>J'ai lu et j'accepte les <a href="/cgv.html" target="_blank" rel="noopener">conditions de vente</a>.</span></label>
+      <div id="erreur" class="alerte cache" role="alert"></div>
+      <button class="bouton" id="payer" type="button" disabled>Continuer vers le paiement</button>
+      <p class="note" style="margin-top:10px">Sans engagement, résiliable à tout moment. Paiement sécurisé par Stripe : nous ne voyons jamais ton numéro de carte. TVA non applicable, art. 293 B du CGI.</p>
+    </section>
+
+    <section id="paiement" class="cache" style="border:0;padding-top:12px">
+      <h1 style="font-size:1.7rem">Paiement</h1>
+      <div id="test" class="test cache"><strong>Mode test :</strong> aucun vrai paiement. Utilise la carte 4242 4242 4242 4242, une date future et un code à 3 chiffres au choix.</div>
+      <div id="stripe"></div>
+      <button class="retour" id="retour" type="button" style="background:none;border:0;color:var(--doux);text-decoration:underline;font:inherit;padding:12px 0;cursor:pointer">Changer de formule</button>
+    </section>
+
+    <section style="border:0">
+      <h2 style="font-size:1.3rem">Questions fréquentes</h2>
+      <details><summary>Est-ce que ça marche pour mon objet ?</summary><p>Ça marche pour la plupart des objets que tu peux photographier : vêtements, jouets, déco, petit électroménager. Tu relis toujours le texte et tu complètes ce qui manque (taille, état, défauts).</p></details>
+      <details><summary>Combien de temps ça prend ?</summary><p>Quelques secondes pour obtenir le texte, puis le temps de le relire et de publier toi-même sur le site de ton choix.</p></details>
+      <details><summary>Comment j'arrête ?</summary><p>En ligne, depuis le bouton « Gérer mon abonnement » sur la page de l'outil, en un clic. Tu gardes l'accès jusqu'à la fin de la période payée.</p></details>
+      <details><summary>Qu'est-ce que je paie exactement ?</summary><p>La rédaction du titre et de la description de tes annonces. Seconde Main ne publie rien à ta place et ne garantit pas de vente.</p></details>
+    </section>
+  </main>
+</div>
+<script>
+(function(){
+  var $ = function(id){ return document.getElementById(id); };
+  function lire(k){ try { return JSON.parse(sessionStorage.getItem(k)); } catch(e){ return null; } }
+  var r = lire('sm_resultat'), a = lire('sm_annonce');
+  if (a && a.titre) {
+    $('rappel').textContent = "Ton annonce d'essai : « " + a.titre + " »";
+    $('rappel').classList.remove('cache');
+  }
+  if (r && r.gain) {
+    $('gain').textContent = "D'après tes réponses (estimation) : environ " + r.gain + " gagnés, pour 12 € par mois, soit 0,40 € par jour.";
+    $('gain').classList.remove('cache');
+  }
+  var formule = 'mensuel', ok = $('ok'), btn = $('payer');
+  function maj(){ btn.disabled = !ok.checked; }
+  ok.addEventListener('change', maj);
+  Array.prototype.forEach.call(document.querySelectorAll('input[name=f]'), function(i){
+    i.addEventListener('change', function(){
+      formule = i.value;
+      $('cMensuel').classList.toggle('choisie', formule === 'mensuel');
+      $('cAnnonce').classList.toggle('choisie', formule === 'annonce');
+    });
+  });
+  function erreur(m){ $('erreur').textContent = m; $('erreur').classList.remove('cache'); }
+  var embed = null;
+  function chargerStripe(){
+    return new Promise(function(ok, ko){
+      if (window.Stripe) return ok();
+      var s = document.createElement('script');
+      s.src = 'https://js.stripe.com/v3/'; s.onload = ok; s.onerror = function(){ ko(new Error('stripe')); };
+      document.head.appendChild(s);
+    });
+  }
+  btn.addEventListener('click', function(){
+    $('erreur').classList.add('cache');
+    btn.disabled = true; btn.textContent = 'Un instant…';
+    var donnees;
+    fetch('/api/paiement', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ action:'checkout', formule: formule }) })
+    .then(function(rep){ return rep.json().catch(function(){ return {}; }).then(function(d){ if (!rep.ok || !d.clientSecret) throw new Error(d.erreur || 'Le paiement n\'est pas encore disponible. Réessaie plus tard.'); donnees = d; }); })
+    .then(chargerStripe)
+    .then(function(){
+      var stripe = window.Stripe(donnees.publishableKey);
+      return stripe.initEmbeddedCheckout({ clientSecret: donnees.clientSecret });
+    })
+    .then(function(e){
+      embed = e;
+      $('choix').classList.add('cache'); $('paiement').classList.remove('cache');
+      $('test').classList.toggle('cache', String(donnees.publishableKey).indexOf('pk_test_') !== 0);
+      e.mount('#stripe'); window.scrollTo(0,0);
+    })
+    .catch(function(err){ erreur(err.message === 'stripe' ? "Impossible de charger le paiement sécurisé. Vérifie ta connexion." : err.message); })
+    .then(function(){ btn.textContent = 'Continuer vers le paiement'; maj(); });
+  });
+  $('retour').addEventListener('click', function(){
+    try { if (embed) embed.destroy(); } catch(e){}
+    embed = null; $('stripe').innerHTML = '';
+    $('paiement').classList.add('cache'); $('choix').classList.remove('cache');
+  });
+})();
+</script>
+</body>
+</html>

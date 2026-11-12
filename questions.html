@@ -50,7 +50,7 @@ body{padding-bottom:24px}
       </div>
       <div class="etiquette">
         <span class="grand" id="tempsApres"></span>
-        <p>avec Seconde Main : le texte et le prix conseillé sont préparés, tu relis et tu déposes.</p>
+        <p>avec Seconde Main : le titre et la description sont préparés, tu relis et tu publies.</p>
       </div>
 
       <p><strong>Tu gagnerais environ <span id="gain"></span> de ton temps.</strong></p>
@@ -154,6 +154,7 @@ body{padding-bottom:24px}
     document.getElementById('calcul').textContent =
       "Comment on a calculé : ce sont des estimations à partir de tes réponses. Aujourd'hui, nous comptons environ 10 minutes par objet et par site. Avec Seconde Main, environ 5 minutes par objet plus 2 minutes par site pour relire et déposer. La valeur utilise le milieu de la tranche que tu as choisie. Ton résultat réel peut être différent.";
 
+    try { sessionStorage.setItem('sm_resultat', JSON.stringify({ argent: euros(argent), avant: dureeTxt(avant), apres: dureeTxt(apres), gain: dureeTxt(gainMin), pct: gainPct, objets: objets, sites: sites })); } catch (e) {}
     elQ.classList.add('cache');
     elR.classList.remove('cache');
     window.scrollTo(0, 0);
